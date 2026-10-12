@@ -15,5 +15,6 @@ NS_ROOT_CLASS
 + (void)initialize;
 - (NSMethodSignature *)methodSignatureForSelector:(SEL)sel;
 - (void)forwardInvocation:(NSInvocation *)inv;
+- (void)doesNotRecognizeSelector:(SEL)sel;
 
 @end

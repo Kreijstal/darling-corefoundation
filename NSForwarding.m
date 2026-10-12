@@ -77,6 +77,15 @@ id ___forwarding___(struct objc_sendv_margs *args, void *returnStorage, void *in
 
     long long result = 0LL;
 
+    if (_cmd == @selector(methodSignatureForSelector:) ||
+        _cmd == @selector(forwardInvocation:) ||
+        _cmd == @selector(forwardingTargetForSelector:) ||
+        _cmd == @selector(doesNotRecognizeSelector:))
+    {
+        fprintf(stderr, "*** RECURSION GUARD in ____forwarding___: %s %s ***\n", className, sel_getName(_cmd));
+        return nil;
+    }
+
     id target = nil;
 
     if (class_respondsToSelector(class, @selector(forwardingTargetForSelector:))) {
@@ -94,16 +103,26 @@ id ___forwarding___(struct objc_sendv_margs *args, void *returnStorage, void *in
         target = self;
     }
 
+    if (!class_respondsToSelector(object_getClass(target), @selector(methodSignatureForSelector:)))
+    {
+        fprintf(stderr, "*** TARGET DOES NOT RESPOND TO methodSignatureForSelector: %s %s ***\n", class_getName(object_getClass(target)), sel_getName(_cmd));
+        [target doesNotRecognizeSelector:_cmd];
+        return nil;
+    }
+
     NSMethodSignature *signature = [target methodSignatureForSelector:_cmd];
 
     if (signature == nil)
     {
-        // DONT EVEN THINK ABOUT REMOVING/HACKING AROUND THIS!
-        // EVER!
-        // ...
-        // yes, I mean YOU!
-        [target doesNotRecognizeSelector:_cmd];
-        return target;
+        if (class_respondsToSelector(object_getClass(target), @selector(doesNotRecognizeSelector:)))
+        {
+            [target doesNotRecognizeSelector:_cmd];
+        }
+        else
+        {
+            fprintf(stderr, "-[%s %s]: unrecognized selector sent to instance %p\n", className, sel_getName(_cmd), target);
+        }
+        return nil;
     }
 
     NSInvocation *inv = [NSInvocation invocationWithMethodSignature:signature];

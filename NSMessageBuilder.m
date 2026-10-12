@@ -34,4 +34,8 @@ id _NSMessageBuilder(id proxy, NSInvocation **inv) {
     }
 }
 
+- (void) doesNotRecognizeSelector: (SEL) sel {
+    // Target does not recognize selector; invocation builder leaves *_addr as nil.
+}
+
 @end
