@@ -2842,6 +2842,18 @@ void CFRunLoopPerformBlock(CFRunLoopRef rl, CFTypeRef mode, void (^block)(void))
     __CFRunLoopUnlock(rl);
 }
 
+#ifdef DARLING
+/* A NULL run loop source reaches the run loop when the caller's source could not be created, typically because
+ * IORegisterForSystemPower failed (no IOPMrootDomain is published) and the caller passed
+ * IONotificationPortGetRunLoopSource(NULL). Ignoring it keeps the caller alive, but the notifications it asked
+ * for will never arrive, so say so once per entry point instead of dropping them silently. */
+static void __CFRunLoopNoteNullSource(const char *function, int32_t *warned) {
+    if (__sync_bool_compare_and_swap(warned, 0, 1)) {
+        CFLog(kCFLogLevelWarning, CFSTR("*** %s: ignoring a NULL run loop source; the callbacks it was meant to deliver will not arrive (logged once)"), function);
+    }
+}
+#endif
+
 Boolean CFRunLoopContainsSource(CFRunLoopRef rl, CFRunLoopSourceRef rls, CFStringRef modeName) {
     CHECK_FOR_FORK();
 #ifdef DARLING
@@ -2870,11 +2882,15 @@ void CFRunLoopAddSource(CFRunLoopRef rl, CFRunLoopSourceRef rls, CFStringRef mod
     CHECK_FOR_FORK();
     if (__CFRunLoopIsDeallocating(rl)) return;
 #ifdef DARLING
-    /* Darling's IOKit has no iokitd, so notification-port lookups can
-     * legitimately yield NULL where Apple always returns a port.
-     * Ignore NULL sources instead of crashing (matches the fail-soft
-     * guards in IOKitUser). */
-    if (NULL == rls) return;
+    /* Notification-port lookups can yield a NULL source where Apple always
+     * returns a port: iokitd does not publish IOPMrootDomain, so
+     * IORegisterForSystemPower fails. Ignore it instead of crashing
+     * (matches the fail-soft guards in IOKitUser), but log it once. */
+    if (NULL == rls) {
+        static int32_t warned;
+        __CFRunLoopNoteNullSource("CFRunLoopAddSource", &warned);
+        return;
+    }
 #endif
     if (!__CFIsValid(rls)) return;
     Boolean doVer0Callout = false;
@@ -2938,8 +2954,12 @@ void CFRunLoopAddSource(CFRunLoopRef rl, CFRunLoopSourceRef rls, CFStringRef mod
 void CFRunLoopRemoveSource(CFRunLoopRef rl, CFRunLoopSourceRef rls, CFStringRef modeName) {	/* DOES CALLOUT */
     CHECK_FOR_FORK();
 #ifdef DARLING
-    /* See CFRunLoopAddSource: ignore NULL sources. */
-    if (NULL == rls) return;
+    /* See CFRunLoopAddSource: ignore NULL sources, log once. */
+    if (NULL == rls) {
+        static int32_t warned;
+        __CFRunLoopNoteNullSource("CFRunLoopRemoveSource", &warned);
+        return;
+    }
 #endif
     Boolean doVer0Callout = false, doRLSRelease = false;
     __CFRunLoopLock(rl);
