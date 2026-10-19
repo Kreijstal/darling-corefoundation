@@ -2886,6 +2886,9 @@ CFComparisonResult CFStringCompare(CFStringRef string, CFStringRef str2, CFStrin
 }
 
 Boolean CFStringFindWithOptionsAndLocale(CFStringRef string, CFStringRef stringToFind, CFRange rangeToSearch, CFStringCompareFlags compareOptions, CFLocaleRef locale, CFRange *result)  {
+    if (string == NULL || stringToFind == NULL) {
+        return false;
+    }
     /* No objc dispatch needed here since CFStringInlineBuffer works with both CFString and NSString */
     CFIndex findStrLen = CFStringGetLength(stringToFind);
     Boolean didFind = false;

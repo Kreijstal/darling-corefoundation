@@ -1232,6 +1232,8 @@ static NSString *_getDescription(id obj, id locale, int level)
 
 - (void)setObject:(id)obj forKeyedSubscript:(id <NSCopying>)key
 {
+    if (key == nil)
+        return;
     if (obj == nil)
         [self removeObjectForKey:key];
     else
@@ -1272,7 +1274,6 @@ static NSString *_getDescription(id obj, id locale, int level)
         if (key == nil)
         {
             @throw [NSException exceptionWithName:NSInvalidArgumentException reason:@"Cannot remove a nil key" userInfo:nil];
-            return;
         }
 
         CFDictionaryRemoveValue((CFMutableDictionaryRef)self, (const void *)key);
