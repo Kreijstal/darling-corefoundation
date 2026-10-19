@@ -1230,6 +1230,22 @@ SINGLETON_RR()
     return success;
 }
 
+- (BOOL)writeToURL:(NSURL *)url error:(NSError **)error
+{
+    NSData *data = (NSData *)_CFPropertyListCreateXMLData(kCFAllocatorDefault, (CFPropertyListRef)self, true);
+    if (data == nil) {
+        // 3852 is NSPropertyListWriteInvalidError, which FoundationErrors.h does not declare yet
+        if (error != NULL) {
+            *error = [NSError errorWithDomain:NSCocoaErrorDomain code:3852 userInfo:nil];
+        }
+        return NO;
+    }
+    // the data writer reports the real cause (permission, missing directory, ...)
+    BOOL success = [data writeToURL:url options:NSDataWritingAtomic error:error];
+    [data release];
+    return success;
+}
+
 - (void)makeObjectsPerformSelector:(SEL)sel
 {
     [self makeObjectsPerformSelector:sel withObject:nil];
