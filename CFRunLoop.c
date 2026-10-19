@@ -2884,8 +2884,7 @@ void CFRunLoopAddSource(CFRunLoopRef rl, CFRunLoopSourceRef rls, CFStringRef mod
 #ifdef DARLING
     /* Notification-port lookups can yield a NULL source where Apple always
      * returns a port: iokitd does not publish IOPMrootDomain, so
-     * IORegisterForSystemPower fails. Ignore it instead of crashing
-     * (matches the fail-soft guards in IOKitUser), but log it once. */
+     * IORegisterForSystemPower fails. Ignore it instead of crashing, but log it once. */
     if (NULL == rls) {
         static int32_t warned;
         __CFRunLoopNoteNullSource("CFRunLoopAddSource", &warned);
