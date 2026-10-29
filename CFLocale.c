@@ -767,6 +767,31 @@ CFArrayRef CFLocaleCopyPreferredLanguages(void) {
     }
     if (languagesArray)	CFRelease(languagesArray);
 #endif
+#ifdef DARLING
+    // Apple's systems always set AppleLanguages; a fresh Darling prefix does not, and apps
+    // take the first preferred language unchecked. Fall back to the host's locale, then English.
+    if (CFArrayGetCount(newArray) == 0) {
+        const char *names[] = { "LC_ALL", "LC_MESSAGES", "LANG" };
+        const char *value = NULL;
+        for (int i = 0; i < 3 && (value == NULL || value[0] == '\0'); i++)
+            value = __CFgetenv(names[i]);
+        CFStringRef ident = NULL;
+        if (value != NULL && value[0] != '\0' && strcmp(value, "C") != 0 && strncmp(value, "C.", 2) != 0 && strcmp(value, "POSIX") != 0) {
+            char language[64];
+            strlcpy(language, value, sizeof(language));
+            language[strcspn(language, ".@")] = '\0';
+            CFStringRef str = CFStringCreateWithCString(kCFAllocatorSystemDefault, language, kCFStringEncodingUTF8);
+            if (str) {
+                ident = CFLocaleCreateCanonicalLanguageIdentifierFromString(kCFAllocatorSystemDefault, str);
+                CFRelease(str);
+            }
+        }
+        if (ident == NULL)
+            ident = (CFStringRef)CFRetain(CFSTR("en"));
+        CFArrayAppendValue(newArray, ident);
+        CFRelease(ident);
+    }
+#endif
     return newArray;
 }
 
