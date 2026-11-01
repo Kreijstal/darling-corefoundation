@@ -118,10 +118,18 @@ NSNotificationName const NSSystemTimeZoneDidChangeNotification = @"kCFTimeZoneSy
     static NSTimeZone *localTZ = nil;
     static dispatch_once_t once = 0L;
     dispatch_once(&once, ^{
-        CFStringRef zoneName = CFStringCreateWithCString(kCFAllocatorDefault, getenv("TZ"), kCFStringEncodingUTF8);
-        localTZ = (NSTimeZone *)CFTimeZoneCreateWithName(NULL, zoneName, false);
-        [localTZ retain];
-        CFRelease(zoneName);
+        // TZ when it names a zone, otherwise the default zone, as Apple's localTimeZone follows it.
+        // A host without TZ and /etc/localtime (a container, an Android app) must not crash here.
+        const char *tz = getenv("TZ");
+        if (tz != NULL && tz[0] != '\0') {
+            CFStringRef zoneName = CFStringCreateWithCString(kCFAllocatorDefault, tz, kCFStringEncodingUTF8);
+            if (zoneName != NULL) {
+                localTZ = (NSTimeZone *)CFTimeZoneCreateWithName(NULL, zoneName, true);
+                CFRelease(zoneName);
+            }
+        }
+        if (localTZ == nil)
+            localTZ = (NSTimeZone *)CFTimeZoneCopyDefault();
     });
     return localTZ;
 }
