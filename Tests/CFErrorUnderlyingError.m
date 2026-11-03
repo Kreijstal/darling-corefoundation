@@ -69,7 +69,7 @@ static void check_enumerator_error(NSString *base)
         return;
     }
 
-    CFURLEnumeratorRef enumerator = CFURLEnumeratorCreateForDirectoryURL(kCFAllocatorDefault, (CFURLRef)[NSURL fileURLWithPath:base], kCFURLEnumeratorDefaultBehavior, NULL);
+    CFURLEnumeratorRef enumerator = CFURLEnumeratorCreateForDirectoryURL(kCFAllocatorDefault, (CFURLRef)[NSURL fileURLWithPath:base], kCFURLEnumeratorDescendRecursively, NULL);
     check_result("enumerator: created for the base directory", enumerator != NULL);
     CFErrorRef error = NULL;
     CFURLEnumeratorResult result = kCFURLEnumeratorEnd;
