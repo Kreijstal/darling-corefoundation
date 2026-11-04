@@ -550,6 +550,37 @@ static CFTypeRef CFURLCreatePropertyForKey(CFURLRef url, CFStringRef key, CFErro
             posixError(error);
         }
     }
+    else if (CFEqual(key, kCFURLTotalFileSizeKey))
+    {
+        // Linux files have no resource fork, so the total is the data fork's size.
+        if (CFURLStat(url, &info))
+        {
+            int64_t size = info.st_size;
+            value = CFNumberCreate(kCFAllocatorDefault, kCFNumberSInt64Type, &size);
+        }
+        else
+        {
+            posixError(error);
+        }
+    }
+    else if (CFEqual(key, kCFURLFileAllocatedSizeKey) || CFEqual(key, kCFURLTotalFileAllocatedSizeKey))
+    {
+        // st_blocks counts 512-byte units whatever the file system's block size.
+        if (CFURLStat(url, &info))
+        {
+            int64_t size = (int64_t)info.st_blocks * 512;
+            value = CFNumberCreate(kCFAllocatorDefault, kCFNumberSInt64Type, &size);
+        }
+        else
+        {
+            posixError(error);
+        }
+    }
+    else if (CFEqual(key, kCFURLIsUbiquitousItemKey))
+    {
+        // There is no iCloud Drive here.
+        value = kCFBooleanFalse;
+    }
     else if (CFEqual(key, kCFURLPreferredIOBlockSizeKey))
     {
         // Key for the optimal block size to use when reading or writing this file's data, returned as a CFNumber object, or NULL if the preferred size is not available.
