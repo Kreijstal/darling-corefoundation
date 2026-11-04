@@ -1,7 +1,7 @@
 // Run linked against the candidate CoreFoundation runtime.
 // A NULL run loop source (what IONotificationPortGetRunLoopSource(NULL) hands back when
 // IORegisterForSystemPower failed) must not crash CFRunLoopAddSource, CFRunLoopRemoveSource or
-// CFRunLoopContainsSource. The first add and remove each log one warning on stderr.
+// CFRunLoopContainsSource, and CFRunLoopSourceSignal, Invalidate, IsValid and IsSignalled ignore it. The first add and remove each log one warning on stderr.
 #include <CoreFoundation/CoreFoundation.h>
 #include <assert.h>
 #include <stdio.h>
@@ -14,6 +14,12 @@ int main(void) {
     assert(!CFRunLoopContainsSource(loop, NULL, kCFRunLoopDefaultMode));
     CFRunLoopRemoveSource(loop, NULL, kCFRunLoopDefaultMode);
     CFRunLoopRemoveSource(loop, NULL, kCFRunLoopCommonModes);
+
+    // signalling, invalidating and querying a NULL source is ignored as well
+    CFRunLoopSourceSignal(NULL);
+    CFRunLoopSourceInvalidate(NULL);
+    assert(!CFRunLoopSourceIsValid(NULL));
+    assert(!CFRunLoopSourceIsSignalled(NULL));
 
     // a real source is still added, found and removed
     CFRunLoopSourceContext context = { 0 };
