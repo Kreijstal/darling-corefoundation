@@ -3429,8 +3429,12 @@ static void __CFRunLoopSourceRemoveFromRunLoop(const void *value, void *context)
 void CFRunLoopSourceInvalidate(CFRunLoopSourceRef rls) {
     CHECK_FOR_FORK();
 #ifdef DARLING
-    /* See CFRunLoopAddSource: a NULL source is ignored. */
-    if (NULL == rls) return;
+    /* See CFRunLoopAddSource: a NULL source is ignored, with one warning. */
+    if (NULL == rls) {
+        static int32_t warned;
+        __CFRunLoopNoteNullSource("CFRunLoopSourceInvalidate", &warned);
+        return;
+    }
 #endif
     __CFGenericValidateType(rls, CFRunLoopSourceGetTypeID());
     __CFRunLoopSourceLock(rls);
@@ -3486,8 +3490,12 @@ void CFRunLoopSourceGetContext(CFRunLoopSourceRef rls, CFRunLoopSourceContext *c
 void CFRunLoopSourceSignal(CFRunLoopSourceRef rls) {
     CHECK_FOR_FORK();
 #ifdef DARLING
-    /* See CFRunLoopAddSource: a NULL source is ignored. */
-    if (NULL == rls) return;
+    /* See CFRunLoopAddSource: a NULL source is ignored, with one warning. */
+    if (NULL == rls) {
+        static int32_t warned;
+        __CFRunLoopNoteNullSource("CFRunLoopSourceSignal", &warned);
+        return;
+    }
 #endif
     __CFRunLoopSourceLock(rls);
     if (__CFIsValid(rls)) {
